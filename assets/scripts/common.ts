@@ -12,6 +12,7 @@ export const EPSILON: CCFloat = 0.0001;
 export interface Routable {
 	getStartPosition(): Vec2;
 	getDestination(): Vec2;
+	getCurrentDirection(): Vec2;
 }
 
 export function getNodeStartPosition(node: Node) {
@@ -24,4 +25,10 @@ export function getNodeDestination(node: Node) {
 	const component: Routable|null = node.getComponent(Tail) || node.getComponent(Controller);
 
 	return component ? component.getDestination() : null;
+}
+
+export function getNodeCurrentDirection(node: Node) {
+	const component: Routable|null = node.getComponent(Tail) || node.getComponent(Controller);
+
+	return component ? component.getCurrentDirection() : null;
 }

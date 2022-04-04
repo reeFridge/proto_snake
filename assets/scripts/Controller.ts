@@ -9,13 +9,14 @@ import {
 	KeyCode,
 	Vec3,
 	CCFloat,
+	CCInteger,
 	clamp01,
 	Prefab,
 	instantiate
 } from 'cc';
-const { ccclass, property, float } = _decorator;
+const { ccclass, property, float, integer } = _decorator;
 
-import { UP, RIGHT, DOWN, LEFT, EPSILON, Routable, getNodeStartPosition, getNodeDestination } from './common';
+import { UP, RIGHT, DOWN, LEFT, EPSILON, Routable, getNodeStartPosition, getNodeDestination, getNodeCurrentDirection } from './common';
 import { Tail } from './Tail';
 import { Trail } from './Trail';
 
@@ -26,6 +27,9 @@ export class Controller extends Component implements Routable {
 
 	@float
 	step: CCFloat = 64; // px
+
+	@integer
+	startSize: CCInteger = 3;
 
 	@property(Prefab)
 	tailPrefab: Prefab|null = null;
@@ -53,6 +57,14 @@ export class Controller extends Component implements Routable {
 		return new Vec2(this.startPosition);
 	}
 
+	getCurrentDirection(): Vec2 {
+		return Vec2.subtract(
+			new Vec2(),
+			this.destination,
+			this.node.getWorldPosition(new Vec3()) as Vec2
+		).normalize();
+	}
+
 	onLoad() {
 		input.on(Input.EventType.KEY_DOWN, this.onKeyDown, this);
 	}
@@ -67,9 +79,12 @@ export class Controller extends Component implements Routable {
 		this.node.getWorldPosition(position);
 		this.startPosition.x = position.x;
 		this.startPosition.y = position.y;
-		this.destination.x = position.x;
-		this.destination.y = position.y;
-		this.movingTime = 1;
+		Vec2.scaleAndAdd(this.destination, this.startPosition, this.direction, this.step);
+		this.movingTime = 0;
+
+		if (this.startSize > 1) {
+			this.growTailByDirection(this.startSize - 1, DOWN);
+		}
 	}
 
 	isDestinationReached() {
@@ -78,15 +93,14 @@ export class Controller extends Component implements Routable {
 
 	update(deltaTime: number) {
 		if (this.stopped) {
+			if (this.lastTail) {
+				this.drawTrail();
+			}
 			return;
 		}
 
 		this.movingTime = clamp01(this.movingTime + deltaTime * (this.speed / this.step));
 		if (this.isDestinationReached()) {
-			if (this.pendingTail) {
-				this.spawnTail();
-			}
-
 			this.startPosition = new Vec2(this.destination);
 			Vec2.scaleAndAdd(this.destination, this.startPosition, this.direction, this.step);
 			this.movingTime = 0;
@@ -115,11 +129,11 @@ export class Controller extends Component implements Routable {
 		this.trail.finish();
 	}
 
-	stop() {
-		this.stopped = true;
+	setStopped(state: boolean) {
+		this.stopped = state;
 		let tail: Tail|null = this.lastTail.getComponent(Tail);
 		while (tail) {
-			tail.stop();
+			tail.setStopped(state);
 			tail = tail.parentPart.getComponent(Tail);
 		}
 	}
@@ -128,37 +142,42 @@ export class Controller extends Component implements Routable {
 		return this.stopped;
 	}
 
-	spawnTail() {
-		const parent: Node = this.lastTail ? this.lastTail : this.node;
-		this.pendingTail.getComponent(Tail).parentPart = parent;
-		this.pendingTail.getComponent(Tail).head = this.node;
-		this.pendingTail.parent = this.node.parent;
+	growTailByDirection(growSize: CCInteger, growDirection: Vec2) {
+		for (let i = 0; i < growSize; ++i) {
+			const tailNode = instantiate(this.tailPrefab);
 
-		const initPosition = getNodeStartPosition(parent);
-		const initDestination = getNodeDestination(parent);
-		this.pendingTail.getComponent(Tail).initRoute(initPosition, initDestination);
-		this.pendingTail.setWorldPosition(new Vec3(initPosition.x, initPosition.y, 0));
+			const parent: Node = this.lastTail ? this.lastTail : this.node;
+			tailNode.getComponent(Tail).parentPart = parent;
+			tailNode.getComponent(Tail).head = this.node;
+			tailNode.parent = this.node.parent;
 
-		this.lastTail = this.pendingTail;
-		this.pendingTail = null;
+			const parentStartPosition = getNodeStartPosition(parent);
+			const initPosition = Vec2.scaleAndAdd(new Vec2(), parentStartPosition, growDirection, this.step);
+			const initDestination = parentStartPosition;
+
+			tailNode.getComponent(Tail).setStopped(this.isStopped());
+			tailNode.getComponent(Tail).initRoute(
+				initPosition,
+				initDestination,
+				this.movingTime
+			);
+
+			this.lastTail = tailNode;
+		}
 	}
 
 	onKeyDown(event: EventKeyboard) {
-		const currentDirection = Vec2.subtract(
-			new Vec2(),
-			this.destination,
-			this.node.getWorldPosition(new Vec3()) as Vec2
-		).normalize();
+		const currentDirection: Vec2 = this.getCurrentDirection();
 
 		switch (event.keyCode) {
 			case KeyCode.SPACE:
 				if (!this.started || this.stopped) {
 					return;
 				}
-
-				if (this.tailPrefab && this.pendingTail === null) {
-					this.pendingTail = instantiate(this.tailPrefab);
-				}
+				this.growTailByDirection(
+					1,
+					Vec2.negate(new Vec2(), getNodeCurrentDirection(this.lastTail ? this.lastTail : this.node))
+				);
 				break;
 			case KeyCode.KEY_W:
 				if (Vec2.equals(DOWN, currentDirection)) {
@@ -194,7 +213,7 @@ export class Controller extends Component implements Routable {
 
 		if (!this.started) {
 			this.started = true;
-			this.stopped = false;
+			this.setStopped(false);
 		}
 	}
 
