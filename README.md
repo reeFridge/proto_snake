@@ -18,7 +18,7 @@ A snake game implemented with the cocos-creator
 -  By each fifth collected fruit, a stone block will be generated and placed at random position with a size (area) of 1% of the overal field area
       - example: game field size = 30x20 cells = 600 field area => stone block with area of 1% of 600 = 6 cells (it can be any of 2x3, 1x6, 3x3 blocks)
 -  After consumption of the fruit a new one will be placed at random position
--  It is garantied that there will be a minimum one empty cell between stone blocks (no dead ends!)
+-  It is garanteed that there will be a minimum one empty cell between stone blocks (no dead ends!)
 
 ## TODO
 
