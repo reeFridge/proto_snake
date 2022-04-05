@@ -1,16 +1,15 @@
-import { _decorator, Component, Node, instantiate, Prefab, Graphics, Color } from 'cc';
+import { _decorator, Component, Node, instantiate, Prefab, Graphics, Color, CCInteger } from 'cc';
 const { ccclass, property, requireComponent, executeInEditMode } = _decorator;
 
-const GRID_W = 24;
-const GRID_H = 24;
-const CELL_SIZE = 64;
-const OFFSET_X = CELL_SIZE * GRID_W / 2;
-const OFFSET_Y = OFFSET_X;
+const GRID_W = 10;
+const GRID_H = 10;
 
-@ccclass('SpawnGuide')
+import { CELL_SIZE } from './common';
+
+@ccclass('Grid')
 @requireComponent(Graphics)
 @executeInEditMode
-export class SpawnGuide extends Component {
+export class Grid extends Component {
 	@property(Color)
 	primaryColor: Color = Color.WHITE.clone();
 
@@ -20,10 +19,15 @@ export class SpawnGuide extends Component {
 	private graphics: Graphics;
 
 	onLoad() {
-		this.graphics = this.node.getComponent(Graphics);
+		this.drawGrid(GRID_W, GRID_H);
+	}
 
-		for (let i = 0; i < GRID_W; ++i) {
-			for (let j = 0; j < GRID_H; ++j) {
+	drawGrid(width: CCInteger, height: CCInteger) {
+		this.graphics = this.node.getComponent(Graphics);
+		this.graphics.clear();
+
+		for (let i = 0; i < width; ++i) {
+			for (let j = 0; j < height; ++j) {
 				if ((i + j + 1) % 2) {
 					this.graphics.fillColor = this.primaryColor;
 				} else {
@@ -31,8 +35,8 @@ export class SpawnGuide extends Component {
 				}
 
 				this.graphics.fillRect(
-					i * CELL_SIZE - OFFSET_X,
-					j * CELL_SIZE - OFFSET_Y,
+					i * CELL_SIZE,
+					j * CELL_SIZE,
 					CELL_SIZE,
 					CELL_SIZE
 				);

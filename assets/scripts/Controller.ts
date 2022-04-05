@@ -19,7 +19,7 @@ import {
 	Intersection2D,
 	EventTarget
 } from 'cc';
-const { ccclass, property, float, integer, requireComponent } = _decorator;
+const { ccclass, property, float, integer, requireComponent, readOnly } = _decorator;
 
 import { CELL_SIZE, UP, RIGHT, DOWN, LEFT, EPSILON, Routable, getNodeStartPosition, getNodeDestination, getNodeCurrentDirection, colliderToRect } from './common';
 import { Tail } from './Tail';
@@ -50,6 +50,9 @@ export class Controller extends Component implements Routable {
 	tailTrail: Node|null = null;
 
 	eventTarget: EventTarget = new EventTarget();
+
+	@property({type: CCInteger, visible: false})
+	score: CCInteger = 0;
 
 	private started: boolean = false;
 	private stopped: boolean = true;
@@ -187,10 +190,16 @@ export class Controller extends Component implements Routable {
 
 		switch (type.type) {
 			case ObjectType.FRUIT:
-				this.growBy(node.getComponent(Fruit).points);
+				const points = node.getComponent(Fruit).points;
+				this.score += points;
+				this.growBy(points);
 				this.setSpeed(this.speed + this.baseSpeed * (node.getComponent(Fruit).speedUp / 100));
 				node.destroy();
 				this.eventTarget.emit(ControllerEvent.FRUIT_REQUEST);
+
+				if (this.score % 5 === 0) {
+					this.eventTarget.emit(ControllerEvent.OBSTACLE_REQUEST);
+				}
 				break;
 			case ObjectType.OBSTACLE:
 				this.setStopped(true);
