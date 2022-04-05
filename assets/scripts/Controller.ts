@@ -12,15 +12,22 @@ import {
 	CCInteger,
 	clamp01,
 	Prefab,
-	instantiate
+	instantiate,
+	BoxCollider2D,
+	Contact2DType,
+	Collider2D,
+	Intersection2D
 } from 'cc';
-const { ccclass, property, float, integer } = _decorator;
+const { ccclass, property, float, integer, requireComponent } = _decorator;
 
-import { UP, RIGHT, DOWN, LEFT, EPSILON, Routable, getNodeStartPosition, getNodeDestination, getNodeCurrentDirection } from './common';
+import { UP, RIGHT, DOWN, LEFT, EPSILON, Routable, getNodeStartPosition, getNodeDestination, getNodeCurrentDirection, colliderToRect } from './common';
 import { Tail } from './Tail';
 import { Trail } from './Trail';
+import { Type, ObjectType } from './Type';
+import { Fruit } from './Fruit';
 
 @ccclass('Controller')
+@requireComponent(BoxCollider2D)
 export class Controller extends Component implements Routable {
 	@float
 	speed: CCFloat = 128; // px/sec
@@ -114,6 +121,40 @@ export class Controller extends Component implements Routable {
 		if (this.lastTail) {
 			this.drawTrail();
 		}
+
+		this.detectCollision();
+	}
+
+	detectCollision() {
+		for (let sibling of this.node.parent.children) {
+			if (sibling === this.node) {
+				continue;
+			}
+
+			const collider: BoxCollider2D|null = sibling.getComponent(BoxCollider2D);
+			const selfCollider: BoxCollider2D = this.node.getComponent(BoxCollider2D);
+			if (collider && Intersection2D.rectRect(colliderToRect(selfCollider), colliderToRect(collider))) {
+				this.onCollision(sibling, collider);
+			}
+		}
+	}
+
+	onCollision(node: Node, collider: BoxCollider2D) {
+		const type = node.getComponent(Type);
+		if (type === null) {
+			return;
+		}
+
+		switch (type.type) {
+			case ObjectType.FRUIT:
+				this.growBy(node.getComponent(Fruit).points);
+				this.setSpeed(this.speed + this.speed * (node.getComponent(Fruit).speedUp / 100));
+				node.destroy();
+				break;
+			case ObjectType.OBSTACLE:
+				this.setStopped(true);
+				break;
+		}
 	}
 
 	drawTrail() {
@@ -129,8 +170,25 @@ export class Controller extends Component implements Routable {
 		this.trail.finish();
 	}
 
+	setSpeed(speed: CCFloat) {
+		this.speed = speed;
+		if (this.lastTail === null) {
+			return;
+		}
+
+		let tail: Tail|null = this.lastTail.getComponent(Tail);
+		while (tail) {
+			tail.speed = speed;
+			tail = tail.parentPart.getComponent(Tail);
+		}
+	}
+
 	setStopped(state: boolean) {
 		this.stopped = state;
+		if (this.lastTail === null) {
+			return;
+		}
+
 		let tail: Tail|null = this.lastTail.getComponent(Tail);
 		while (tail) {
 			tail.setStopped(state);
@@ -140,6 +198,13 @@ export class Controller extends Component implements Routable {
 
 	isStopped() {
 		return this.stopped;
+	}
+
+	growBy(growSize: CCInteger) {
+		this.growTailByDirection(
+			growSize,
+			Vec2.negate(new Vec2(), getNodeCurrentDirection(this.lastTail ? this.lastTail : this.node))
+		);
 	}
 
 	growTailByDirection(growSize: CCInteger, growDirection: Vec2) {
@@ -170,15 +235,6 @@ export class Controller extends Component implements Routable {
 		const currentDirection: Vec2 = this.getCurrentDirection();
 
 		switch (event.keyCode) {
-			case KeyCode.SPACE:
-				if (!this.started || this.stopped) {
-					return;
-				}
-				this.growTailByDirection(
-					1,
-					Vec2.negate(new Vec2(), getNodeCurrentDirection(this.lastTail ? this.lastTail : this.node))
-				);
-				break;
 			case KeyCode.KEY_W:
 				if (Vec2.equals(DOWN, currentDirection)) {
 					return;

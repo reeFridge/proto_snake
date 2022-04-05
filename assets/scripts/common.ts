@@ -1,4 +1,4 @@
-import { Vec2, CCFloat, Node } from 'cc';
+import { Vec2, CCFloat, Node, Rect, BoxCollider2D, Vec3 } from 'cc';
 
 import { Controller } from './Controller';
 import { Tail } from './Tail';
@@ -31,4 +31,18 @@ export function getNodeCurrentDirection(node: Node) {
 	const component: Routable|null = node.getComponent(Tail) || node.getComponent(Controller);
 
 	return component ? component.getCurrentDirection() : null;
+}
+
+export function colliderToRect(boxCollider: BoxCollider2D): Rect {
+    const rect: Rect = new Rect();
+	const node: Node = boxCollider.node;
+	const position: Vec3 = node.getWorldPosition(new Vec3());
+    const x = position.x;
+    const y = position.y;
+    rect.x = (x + boxCollider.offset.x) - boxCollider.size.width * 0.5;
+    rect.y = (y + boxCollider.offset.y) - boxCollider.size.height * 0.5;
+    rect.width = boxCollider.size.width;
+    rect.height = boxCollider.size.height;
+
+    return rect;
 }

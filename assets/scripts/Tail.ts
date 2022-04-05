@@ -83,7 +83,7 @@ export class Tail extends Component implements Routable {
 
 	checkHeadCollision(selfPosition: Vec2) {
 		const distanceSqr = Vec2.squaredDistance(this.head.getWorldPosition(new Vec3()) as Vec2, selfPosition);
-		if (distanceSqr < (this.step * this.step) / 2) {
+		if (distanceSqr < (this.step * this.step) / 4) {
 			const controller: Controller = this.head.getComponent(Controller);
 			if (!controller.isStopped()) {
 				controller.setStopped(true);

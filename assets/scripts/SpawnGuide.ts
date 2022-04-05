@@ -4,7 +4,7 @@ const { ccclass, property, requireComponent, executeInEditMode } = _decorator;
 const GRID_W = 24;
 const GRID_H = 24;
 const CELL_SIZE = 64;
-const OFFSET_X = CELL_SIZE * GRID_W / 2 + CELL_SIZE / 2;
+const OFFSET_X = CELL_SIZE * GRID_W / 2;
 const OFFSET_Y = OFFSET_X;
 
 @ccclass('SpawnGuide')
