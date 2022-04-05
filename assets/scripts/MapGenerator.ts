@@ -13,13 +13,14 @@ import {
 	Rect,
 	UITransform,
 	Size,
-	view
+	screen
 } from 'cc';
 const { ccclass, property, integer } = _decorator;
 
 import { ControllerEvent, Controller } from './Controller';
 import { Grid } from './Grid';
 import { CELL_SIZE, colliderToRect } from './common';
+import { FollowCamera } from './FollowCamera';
 
 @ccclass('MapGenerator')
 export class MapGenerator extends Component {
@@ -49,6 +50,9 @@ export class MapGenerator extends Component {
 
 	@property(Node)
 	grid: Node;
+
+	@property(Node)
+	cameraNode: Node;
 
 	spawnFruit(position: Vec2) {
 		const node = instantiate(this.fruitPrefab);
@@ -136,7 +140,7 @@ export class MapGenerator extends Component {
 	}
 
 	start() {
-		const screenSize = view.getFrameSize();
+		const screenSize = screen.windowSize;
 		const screenSizeInCells = new Size(
 			Math.floor(screenSize.width / CELL_SIZE),
 			Math.floor(screenSize.height / CELL_SIZE)
@@ -149,6 +153,15 @@ export class MapGenerator extends Component {
 		const controller: Controller = this.head.getComponent(Controller);
 		controller.eventTarget.on(ControllerEvent.FRUIT_REQUEST, this.onFruitRequest, this);
 		controller.eventTarget.on(ControllerEvent.OBSTACLE_REQUEST, this.onObstacleRequest, this);
+
+		const position = this.node.getWorldPosition(new Vec3());
+		const worldRect = new Rect(
+			position.x - CELL_SIZE - CELL_SIZE / 2,
+			position.y - CELL_SIZE - CELL_SIZE / 2,
+			(this.width + 2) * CELL_SIZE,
+			(this.height + 2) * CELL_SIZE
+		);
+		this.cameraNode.getComponent(FollowCamera).setWorldRect(worldRect);
 
 		this.spawnEdges();
 		for (let i = 0; i < this.fruitsOnStart; ++i) {
