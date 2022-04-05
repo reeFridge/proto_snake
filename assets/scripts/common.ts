@@ -7,7 +7,8 @@ export const UP: Vec2 = new Vec2(0, 1);
 export const RIGHT: Vec2 = new Vec2(1, 0);
 export const DOWN: Vec2 = new Vec2(0, -1);
 export const LEFT: Vec2 = new Vec2(-1, 0);
-export const EPSILON: CCFloat = 0.0001;
+export const EPSILON: CCFloat = 0.001;
+export const CELL_SIZE: CCFloat = 64;
 
 export interface Routable {
 	getStartPosition(): Vec2;

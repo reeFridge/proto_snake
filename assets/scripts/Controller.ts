@@ -16,24 +16,29 @@ import {
 	BoxCollider2D,
 	Contact2DType,
 	Collider2D,
-	Intersection2D
+	Intersection2D,
+	EventTarget
 } from 'cc';
 const { ccclass, property, float, integer, requireComponent } = _decorator;
 
-import { UP, RIGHT, DOWN, LEFT, EPSILON, Routable, getNodeStartPosition, getNodeDestination, getNodeCurrentDirection, colliderToRect } from './common';
+import { CELL_SIZE, UP, RIGHT, DOWN, LEFT, EPSILON, Routable, getNodeStartPosition, getNodeDestination, getNodeCurrentDirection, colliderToRect } from './common';
 import { Tail } from './Tail';
 import { Trail } from './Trail';
 import { Type, ObjectType } from './Type';
 import { Fruit } from './Fruit';
 
+export enum ControllerEvent {
+	FRUIT_REQUEST = 'fruit-request',
+	OBSTACLE_REQUEST = 'obstacle-request',
+}
+
 @ccclass('Controller')
 @requireComponent(BoxCollider2D)
 export class Controller extends Component implements Routable {
 	@float
-	speed: CCFloat = 128; // px/sec
-
-	@float
-	step: CCFloat = 64; // px
+	baseSpeed: CCFloat = 128; // px/sec
+	private step: CCFloat = CELL_SIZE; // px
+	private speed: CCFloat = 0;
 
 	@integer
 	startSize: CCInteger = 3;
@@ -43,6 +48,8 @@ export class Controller extends Component implements Routable {
 
 	@property(Node)
 	tailTrail: Node|null = null;
+
+	eventTarget: EventTarget = new EventTarget();
 
 	private started: boolean = false;
 	private stopped: boolean = true;
@@ -81,6 +88,7 @@ export class Controller extends Component implements Routable {
 	}
 
 	start() {
+		this.speed = this.baseSpeed;
 		this.trail = this.tailTrail.getComponent(Trail);
 		const position: Vec3 = new Vec3();
 		this.node.getWorldPosition(position);
@@ -106,12 +114,17 @@ export class Controller extends Component implements Routable {
 			return;
 		}
 
-		this.movingTime = clamp01(this.movingTime + deltaTime * (this.speed / this.step));
+		const unclamped = this.movingTime + deltaTime * (this.speed / this.step);
+		this.movingTime = clamp01(unclamped);
 		if (this.isDestinationReached()) {
 			this.startPosition = new Vec2(this.destination);
 			Vec2.scaleAndAdd(this.destination, this.startPosition, this.direction, this.step);
-			this.movingTime = 0;
+			this.movingTime = unclamped > this.movingTime ? unclamped - this.movingTime : 0;
 			this.lookToDirection();
+
+			this.forEachTail((tail: Tail) => {
+				tail.finishRoute();
+			});
 		}
 
 		const position: Vec2 = new Vec2(0, 0);
@@ -119,10 +132,37 @@ export class Controller extends Component implements Routable {
 		this.node.setWorldPosition(new Vec3(position.x, position.y, 0));
 
 		if (this.lastTail) {
+			this.forEachTail((tail: Tail) => {
+				tail.updatePosition(this.movingTime);
+			});
 			this.drawTrail();
 		}
 
 		this.detectCollision();
+	}
+
+	getTailStack(): Tail[] {
+		const stack = [];
+		if (!this.lastTail) {
+			return stack;
+		}
+
+		let tail: Tail|null = this.lastTail.getComponent(Tail);
+		while (tail) {
+			stack.push(tail);
+			tail = tail.parentPart.getComponent(Tail);
+		}
+
+		return stack;
+	}
+
+	// from head to last
+	forEachTail(fn: (tail: Tail) => void) {
+		const stack = this.getTailStack();
+		let tail: Tail;
+		while (tail = stack.pop()) {
+			fn(tail);
+		}
 	}
 
 	detectCollision() {
@@ -148,8 +188,9 @@ export class Controller extends Component implements Routable {
 		switch (type.type) {
 			case ObjectType.FRUIT:
 				this.growBy(node.getComponent(Fruit).points);
-				this.setSpeed(this.speed + this.speed * (node.getComponent(Fruit).speedUp / 100));
+				this.setSpeed(this.speed + this.baseSpeed * (node.getComponent(Fruit).speedUp / 100));
 				node.destroy();
+				this.eventTarget.emit(ControllerEvent.FRUIT_REQUEST);
 				break;
 			case ObjectType.OBSTACLE:
 				this.setStopped(true);
@@ -172,32 +213,10 @@ export class Controller extends Component implements Routable {
 
 	setSpeed(speed: CCFloat) {
 		this.speed = speed;
-		if (this.lastTail === null) {
-			return;
-		}
-
-		let tail: Tail|null = this.lastTail.getComponent(Tail);
-		while (tail) {
-			tail.speed = speed;
-			tail = tail.parentPart.getComponent(Tail);
-		}
 	}
 
 	setStopped(state: boolean) {
 		this.stopped = state;
-		if (this.lastTail === null) {
-			return;
-		}
-
-		let tail: Tail|null = this.lastTail.getComponent(Tail);
-		while (tail) {
-			tail.setStopped(state);
-			tail = tail.parentPart.getComponent(Tail);
-		}
-	}
-
-	isStopped() {
-		return this.stopped;
 	}
 
 	growBy(growSize: CCInteger) {
@@ -220,7 +239,6 @@ export class Controller extends Component implements Routable {
 			const initPosition = Vec2.scaleAndAdd(new Vec2(), parentStartPosition, growDirection, this.step);
 			const initDestination = parentStartPosition;
 
-			tailNode.getComponent(Tail).setStopped(this.isStopped());
 			tailNode.getComponent(Tail).initRoute(
 				initPosition,
 				initDestination,
