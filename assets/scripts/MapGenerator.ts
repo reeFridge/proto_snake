@@ -13,7 +13,9 @@ import {
 	Rect,
 	UITransform,
 	Size,
-	view
+	view,
+	EventTarget,
+	screen
 } from 'cc';
 const { ccclass, property, integer } = _decorator;
 
@@ -21,6 +23,10 @@ import { ControllerEvent, Controller } from './Controller';
 import { Grid } from './Grid';
 import { CELL_SIZE, colliderToRect } from './common';
 import { FollowCamera } from './FollowCamera';
+
+export enum MapGeneratorEvent {
+	ROCKS_UPDATED = 'rocks-updated'
+}
 
 @ccclass('MapGenerator')
 export class MapGenerator extends Component {
@@ -53,6 +59,10 @@ export class MapGenerator extends Component {
 
 	@property(Node)
 	cameraNode: Node;
+
+	rocksCount: CCInteger = 0;
+
+	eventTarget: EventTarget = new EventTarget();
 
 	spawnFruit(position: Vec2) {
 		const node = instantiate(this.fruitPrefab);
@@ -130,6 +140,8 @@ export class MapGenerator extends Component {
 		}
 
 		this.spawnObstacle(obstacleSize.width, obstacleSize.height, cell);
+		this.rocksCount++;
+		this.eventTarget.emit(MapGeneratorEvent.ROCKS_UPDATED, this.rocksCount);
 	}
 
 	spawnEdges() {
@@ -140,7 +152,7 @@ export class MapGenerator extends Component {
 	}
 
 	start() {
-		const screenSize = view.getVisibleSize();
+		const screenSize = screen.windowSize;
 		const screenSizeInCells = new Size(
 			Math.floor(screenSize.width / CELL_SIZE),
 			Math.floor(screenSize.height / CELL_SIZE)

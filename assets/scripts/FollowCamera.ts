@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3, Rect, clamp, view, Size } from 'cc';
+import { _decorator, Component, Node, Vec3, Rect, clamp, view, Size, game, Camera, screen } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('FollowCamera')
@@ -10,9 +10,28 @@ export class FollowCamera extends Component {
 	worldRect: Rect = new Rect(0, 0, 100, 100);
 
 	private halfScreenSize: Size = new Size();
+	
+	onLoad() {
+		const size = game.canvas;
+		const cameraComponent: Camera = this.node.getComponent(Camera);
+
+		// Copypaste from Canvas::_onResizeCamer
+		if (cameraComponent.targetTexture) {
+			const win = cameraComponent.targetTexture.window;
+			if (cameraComponent.camera) {
+				cameraComponent.camera.setFixedSize(win!.width, win!.height);
+			}
+			cameraComponent.orthoHeight = visibleRect.height / 2;
+		} else if (game.canvas) {
+			if (cameraComponent.camera) {
+				cameraComponent.camera.resize(size.width, size.height);
+			}
+			cameraComponent.orthoHeight = game.canvas.height / view.getScaleY() / 2;
+		}
+	}
 
 	start() {
-		this.halfScreenSize = view.getVisibleSize();
+		this.halfScreenSize = screen.windowSize;
 		this.halfScreenSize.width /= 2;
 		this.halfScreenSize.height /= 2;
 	}

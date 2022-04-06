@@ -19,7 +19,7 @@ import {
 	Intersection2D,
 	EventTarget
 } from 'cc';
-const { ccclass, property, float, integer, requireComponent, readOnly } = _decorator;
+const { ccclass, property, float, integer, requireComponent } = _decorator;
 
 import { CELL_SIZE, UP, RIGHT, DOWN, LEFT, EPSILON, Routable, getNodeStartPosition, getNodeDestination, getNodeCurrentDirection, colliderToRect } from './common';
 import { Tail } from './Tail';
@@ -30,6 +30,7 @@ import { Fruit } from './Fruit';
 export enum ControllerEvent {
 	FRUIT_REQUEST = 'fruit-request',
 	OBSTACLE_REQUEST = 'obstacle-request',
+	SCORE_UPDATED = 'score-updated'
 }
 
 @ccclass('Controller')
@@ -192,6 +193,7 @@ export class Controller extends Component implements Routable {
 			case ObjectType.FRUIT:
 				const points = node.getComponent(Fruit).points;
 				this.score += points;
+				this.eventTarget.emit(ControllerEvent.SCORE_UPDATED, this.score);
 				this.growBy(points);
 				this.setSpeed(this.speed + this.baseSpeed * (node.getComponent(Fruit).speedUp / 100));
 				node.destroy();
