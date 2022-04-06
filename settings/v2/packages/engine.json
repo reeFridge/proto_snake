@@ -74,7 +74,7 @@
         "_value": true
       },
       "tween": {
-        "_value": true
+        "_value": false
       },
       "terrain": {
         "_value": false
@@ -101,7 +101,6 @@
       "intersection-2d",
       "physics-2d-builtin",
       "profiler",
-      "tween",
       "ui",
       "webview"
     ],

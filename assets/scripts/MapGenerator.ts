@@ -13,7 +13,7 @@ import {
 	Rect,
 	UITransform,
 	Size,
-	screen
+	view
 } from 'cc';
 const { ccclass, property, integer } = _decorator;
 
@@ -140,7 +140,7 @@ export class MapGenerator extends Component {
 	}
 
 	start() {
-		const screenSize = screen.windowSize;
+		const screenSize = view.getVisibleSize();
 		const screenSizeInCells = new Size(
 			Math.floor(screenSize.width / CELL_SIZE),
 			Math.floor(screenSize.height / CELL_SIZE)

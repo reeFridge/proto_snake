@@ -3,5 +3,15 @@
     "gravity": {
       "y": 0
     }
+  },
+  "general": {
+    "designResolution": {
+      "fitWidth": true,
+      "width": 960,
+      "height": 640
+    }
+  },
+  "script": {
+    "loose": false
   }
 }
