@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3, Rect, clamp, view, Size, game, Camera, screen } from 'cc';
+import { _decorator, Component, Node, Vec3, Rect, clamp, view, Size, game, Camera, screen, visibleRect } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('FollowCamera')
@@ -26,7 +26,7 @@ export class FollowCamera extends Component {
 			if (cameraComponent.camera) {
 				cameraComponent.camera.resize(size.width, size.height);
 			}
-			cameraComponent.orthoHeight = game.canvas.height / view.getScaleY() / 2;
+			cameraComponent.orthoHeight = game.canvas.height / 2;
 		}
 	}
 

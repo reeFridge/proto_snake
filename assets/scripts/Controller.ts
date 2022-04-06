@@ -30,7 +30,8 @@ import { Fruit } from './Fruit';
 export enum ControllerEvent {
 	FRUIT_REQUEST = 'fruit-request',
 	OBSTACLE_REQUEST = 'obstacle-request',
-	SCORE_UPDATED = 'score-updated'
+	SCORE_UPDATED = 'score-updated',
+	STOPPED = 'stopped'
 }
 
 @ccclass('Controller')
@@ -55,7 +56,6 @@ export class Controller extends Component implements Routable {
 	@property({type: CCInteger, visible: false})
 	score: CCInteger = 0;
 
-	private started: boolean = false;
 	private stopped: boolean = true;
 	private trail: Trail;
 	private lastTail: Node|null = null;
@@ -228,6 +228,9 @@ export class Controller extends Component implements Routable {
 
 	setStopped(state: boolean) {
 		this.stopped = state;
+		if (state) {
+			this.eventTarget.emit(ControllerEvent.STOPPED);
+		}
 	}
 
 	growBy(growSize: CCInteger) {
