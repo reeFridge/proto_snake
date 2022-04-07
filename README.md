@@ -2,6 +2,8 @@
 
 A snake game implemented with the cocos-creator
 
+You can even [play it](https://reefridge.github.io/proto_snake/build/web-mobile/) in the browser!
+
 ## Core mechanic
 
 - A snake starts with a size of 3 sections
