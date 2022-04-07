@@ -152,10 +152,11 @@ export class MapGenerator extends Component {
 	}
 
 	start() {
+		const dpr = screen.devicePixelRatio;
 		const screenSize = screen.windowSize;
 		const screenSizeInCells = new Size(
-			Math.floor(screenSize.width / CELL_SIZE),
-			Math.floor(screenSize.height / CELL_SIZE)
+			Math.floor((screenSize.width / dpr)/ CELL_SIZE),
+			Math.floor((screenSize.height / dpr) / CELL_SIZE)
 		);
 		this.width = screenSizeInCells.width * 2;
 		this.height = screenSizeInCells.height * 2;

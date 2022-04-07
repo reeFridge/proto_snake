@@ -14,26 +14,23 @@ export class FollowCamera extends Component {
 	onLoad() {
 		const size = game.canvas;
 		const cameraComponent: Camera = this.node.getComponent(Camera);
+		const dpr = screen.devicePixelRatio;
 
-		// Copypaste from Canvas::_onResizeCamer
-		if (cameraComponent.targetTexture) {
-			const win = cameraComponent.targetTexture.window;
-			if (cameraComponent.camera) {
-				cameraComponent.camera.setFixedSize(win!.width, win!.height);
-			}
-			cameraComponent.orthoHeight = visibleRect.height / 2;
-		} else if (game.canvas) {
-			if (cameraComponent.camera) {
-				cameraComponent.camera.resize(size.width, size.height);
-			}
-			cameraComponent.orthoHeight = game.canvas.height / 2;
+		// Copypaste from Canvas::_onResizeCamera (for web build only)
+		if (game.canvas) {
+			cameraComponent.orthoHeight = (game.canvas.height / dpr) / 2;
 		}
 	}
 
 	start() {
+		// for retina = 2
+		// in general = 1
+		const dpr = screen.devicePixelRatio;
 		this.halfScreenSize = screen.windowSize;
-		this.halfScreenSize.width /= 2;
-		this.halfScreenSize.height /= 2;
+		this.halfScreenSize.width = (this.halfScreenSize.width / dpr) / 2;
+		this.halfScreenSize.height = (this.halfScreenSize.height / dpr) / 2;
+		const cameraComponent: Camera = this.node.getComponent(Camera);
+		cameraComponent.orthoHeight = this.halfScreenSize.height;
 	}
 
 	lateUpdate(deltaTime: number) {
