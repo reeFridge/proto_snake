@@ -3,7 +3,7 @@ const { ccclass, property } = _decorator;
 
 import { ControllerEvent, Controller } from './Controller';
 import { MapGeneratorEvent, MapGenerator } from './MapGenerator';
-import { Manager } from './Manager';
+import { Manager, ScoreRecord } from './Manager';
 
 function generateScoreText(score: CCInteger): string {
 	return `SCORE [ ${score} ]`;
@@ -30,9 +30,14 @@ export class UIApi extends Component {
 	@property(Node)
 	restart: Node;
 
+	@property(Node)
+	topScores: Node;
+
 	private managerNode: Node;
 
 	onLoad() {
+		this.restart.active = false;
+		this.topScores.active = false;
 		this.managerNode = find('Manager');
 		this.headNode.getComponent(Controller).eventTarget.on(ControllerEvent.STOPPED, this.onGameOver, this);
 		this.headNode.getComponent(Controller).eventTarget.on(ControllerEvent.SCORE_UPDATED, this.updateScore, this);
@@ -45,8 +50,26 @@ export class UIApi extends Component {
 		node.getComponent(Widget).updateAlignment();
 	}
 
-	onGameOver() {
+	onGameOver(scoreRecord: ScoreRecord|null) {
+		const manager: Manager = this.managerNode.getComponent(Manager);
+		const n = 5;
+		const topRecords = manager.getLastTopRecords(n);
+
+		for (let i = 0; i < n; ++i) {
+			const labelNode = this.topScores.getChildByName('_' + (i + 1));
+			const record = topRecords[i];
+			if (labelNode && record) {
+				const time = (new Date(topRecords[i].timestamp)).toTimeString().split(' ')[0];
+				let text = `SCORE: ${topRecords[i].score} | at ${time}`;
+				if (scoreRecord && scoreRecord.timestamp === record.timestamp) {
+					text = '> ' + text + ' <';
+				}
+				labelNode.getComponent(Label).string = text;
+			}
+		}
+
 		this.restart.active = true;
+		this.topScores.active = true;
 	}
 
 	onRestartClick() {

@@ -17,7 +17,8 @@ import {
 	Contact2DType,
 	Collider2D,
 	Intersection2D,
-	EventTarget
+	EventTarget,
+	find
 } from 'cc';
 const { ccclass, property, float, integer, requireComponent } = _decorator;
 
@@ -26,6 +27,7 @@ import { Tail } from './Tail';
 import { Trail } from './Trail';
 import { Type, ObjectType } from './Type';
 import { Fruit } from './Fruit';
+import { Manager } from './Manager';
 
 export enum ControllerEvent {
 	FRUIT_REQUEST = 'fruit-request',
@@ -66,6 +68,7 @@ export class Controller extends Component implements Routable {
 	private destination: Vec2 = new Vec2(0, 0);
 	private startPosition: Vec2 = new Vec2(0, 0);
 	private movingTime: CCFloat = 0;
+	private managerNode: Node;
 
 	getDestination(): Vec2 {
 		return new Vec2(this.destination);
@@ -84,6 +87,7 @@ export class Controller extends Component implements Routable {
 	}
 
 	onLoad() {
+		this.managerNode = find('Manager');
 		input.on(Input.EventType.KEY_DOWN, this.onKeyDown, this);
 	}
 
@@ -229,7 +233,11 @@ export class Controller extends Component implements Routable {
 	setStopped(state: boolean) {
 		this.stopped = state;
 		if (state) {
-			this.eventTarget.emit(ControllerEvent.STOPPED);
+			let scoreRecord = null;
+			if (this.score > 0) {
+				scoreRecord = this.managerNode.getComponent(Manager).registerScore(this.score);
+			}
+			this.eventTarget.emit(ControllerEvent.STOPPED, scoreRecord);
 		}
 	}
 

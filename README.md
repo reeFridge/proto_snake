@@ -22,5 +22,5 @@ A snake game implemented with the cocos-creator
 
 ## TODO
 
-- [ ] User interface
+- [x] User interface
 - [ ] Audio fx (optional)
